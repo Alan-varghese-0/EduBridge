@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:mcq_app/core/utility/app_gradients.dart';
 import 'package:flutter/material.dart';
 import 'package:mcq_app/services/auth_service.dart';
 import 'package:mcq_app/services/firestore_services.dart';
@@ -25,13 +26,7 @@ class _RegisterState extends State<RegisterScreen> {
     return Scaffold(
       body: Container(
         width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppGradients.primaryGradient),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(

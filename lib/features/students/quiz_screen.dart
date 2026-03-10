@@ -46,9 +46,24 @@ class _QuizScreenState extends State<QuizScreen> {
       'teacherId': teacherId,
       'score': score,
       'totalMarks': totalMarks,
-      'answers': selectedAnswers, // ✅ IMPORTANT
+      'answers': selectedAnswers,
       'submittedAt': Timestamp.now(),
     });
+
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(studentId)
+        .collection("takenQuizzes")
+        .doc(widget.quizId)
+        .set({'taken': true, 'takenAt': Timestamp.now()});
+
+    // remove retake permission after retake
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(studentId)
+        .collection("retakeAllowed")
+        .doc(widget.quizId)
+        .delete();
 
     setState(() => isSubmitting = false);
 

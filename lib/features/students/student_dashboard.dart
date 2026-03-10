@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:mcq_app/core/utility/app_gradients.dart';
+import 'package:mcq_app/core/utility/page_trasition.dart';
+import 'package:mcq_app/features/auth/login_screen.dart';
 import 'package:mcq_app/features/students/connect_teacher_screen.dart';
 import 'package:mcq_app/features/students/student_quiz_list_screen.dart';
 
@@ -12,14 +15,49 @@ class StudentDashboard extends StatelessWidget {
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF11998e), Color(0xFF38ef7d)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+      // backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.person_add, color: Colors.white),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ConnectTeacherScreen()),
+            );
+          },
         ),
+        centerTitle: true,
+        title: const Text(
+          "Student Dashboard",
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ConnectTeacherScreen()),
+              );
+            },
+          ),
+          TextButton(
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+              Navigator.push(
+                context,
+                AppTransitions.fadeTransition(const LoginScreen()),
+              );
+            },
+            child: Text("sign out"),
+          ),
+        ],
+      ),
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppGradients.primaryGradient),
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -56,17 +94,6 @@ class StudentDashboard extends StatelessWidget {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Student Dashboard",
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-
-                    const SizedBox(height: 25),
-
                     /// =========================
                     /// Monthly Progress
                     /// =========================
@@ -102,7 +129,6 @@ class StudentDashboard extends StatelessWidget {
 
                     const SizedBox(height: 30),
 
-                    /// Buttons
                     SizedBox(
                       width: double.infinity,
                       height: 50,
@@ -117,33 +143,8 @@ class StudentDashboard extends StatelessWidget {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => const ConnectTeacherScreen(),
-                            ),
-                          );
-                        },
-                        child: const Text("Connect to Teacher"),
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.teal,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const StudentQuizListScreen(),
+                            AppTransitions.fadeTransition(
+                              const StudentQuizListScreen(),
                             ),
                           );
                         },

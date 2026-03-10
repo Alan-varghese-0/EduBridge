@@ -34,6 +34,36 @@ class _StudentQuizListScreenState extends State<StudentQuizListScreen> {
     });
   }
 
+  Future<void> sendRetakeRequest(String quizId) async {
+    final studentId = FirebaseAuth.instance.currentUser!.uid;
+
+    final existingRequest = await FirebaseFirestore.instance
+        .collection('retakeRequests')
+        .where('quizId', isEqualTo: quizId)
+        .where('studentId', isEqualTo: studentId)
+        .where('status', isEqualTo: 'pending')
+        .get();
+
+    if (existingRequest.docs.isNotEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Request already sent")));
+      return;
+    }
+
+    await FirebaseFirestore.instance.collection('retakeRequests').add({
+      'quizId': quizId,
+      'studentId': studentId,
+      'teacherId': teacherId,
+      'status': 'pending',
+      'requestedAt': Timestamp.now(),
+    });
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Your request has been sent')));
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -74,13 +104,68 @@ class _StudentQuizListScreenState extends State<StudentQuizListScreen> {
                 margin: const EdgeInsets.all(10),
                 child: ListTile(
                   title: Text(quiz['title']),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => QuizScreen(quizId: quiz.id),
-                      ),
-                    );
+                  onTap: () async {
+                    final studentId = FirebaseAuth.instance.currentUser!.uid;
+
+                    final takenDoc = await FirebaseFirestore.instance
+                        .collection("users")
+                        .doc(studentId)
+                        .collection('takenQuizzes')
+                        .doc(quiz.id)
+                        .get();
+
+                    final retakeDoc = await FirebaseFirestore.instance
+                        .collection("users")
+                        .doc(studentId)
+                        .collection('retakeAllowed')
+                        .doc(quiz.id)
+                        .get();
+
+                    // First attempt
+                    if (!takenDoc.exists) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => QuizScreen(quizId: quiz.id),
+                        ),
+                      );
+                    }
+                    // Retake approved
+                    else if (retakeDoc.exists) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => QuizScreen(quizId: quiz.id),
+                        ),
+                      );
+                    }
+                    // Already taken but no approval
+                    else {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text('Test already taken'),
+                          content: const Text(
+                            'Do you wish to request a retake?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              child: const Text("Cancel"),
+                            ),
+                            ElevatedButton(
+                              onPressed: () async {
+                                Navigator.pop(context);
+                                await sendRetakeRequest(quiz.id);
+                              },
+                              child: const Text("Request Retake"),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
                   },
                 ),
               );

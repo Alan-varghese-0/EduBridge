@@ -1,0 +1,41 @@
+        --Student--
+
+fix monthly progress and history 
+fix qiuzzes and connect teacher ui in student 
+fix the one time quaetion answering 
+
+fix the quizzes oerdrer 
+
+
+idea=>  need to ceate a widget and a page to show teacher uploaded conent and materials 
+        add a button for both retake a test (time ended and just retake)
+        show notification for new question/content/test etc (as a reminder)
+
+
+        --Teaher--
+
+fix teacher ui
+
+idea=>  show the questiion and the viewsa and partisiptaion
+        add a buttion to see whch student did the qustion or test and show there answers 
+        a notification to accept retake test 
+        add time limit to take a test and if the mite edns the student need to request for a retake 
+
+        --Others--
+
+    create a chat so sstudent can clear the doutes 
+
+    in-teacher show each student activity like
+        |-> student monthly activity 
+        |-> teast they taken 
+        ->  average time to finish the test etc
+    
+    in-student show there own progress
+        |-> average time to finish test 
+        |-> total test taken and the answers 
+        |-> etc
+
+    app logo ???
+    color combo ??
+    font ??? 
+    

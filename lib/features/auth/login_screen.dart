@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:mcq_app/core/utility/app_gradients.dart';
 import 'package:mcq_app/features/auth/register_screen.dart';
 import 'package:mcq_app/features/students/student_dashboard.dart';
 import 'package:mcq_app/features/teacher/teacher_dashboard.dart';
@@ -59,13 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Container(
         width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppGradients.primaryGradient),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -157,8 +152,40 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => RegisterScreen(),
+                            PageRouteBuilder(
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      RegisterScreen(),
+                              transitionDuration: const Duration(
+                                milliseconds: 550,
+                              ),
+                              transitionsBuilder:
+                                  (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) {
+                                    const begin = Offset(
+                                      1.0,
+                                      0.0,
+                                    ); // Right → Left
+                                    const end = Offset.zero;
+                                    const curve = Curves.easeInOut;
+
+                                    var tween = Tween(
+                                      begin: begin,
+                                      end: end,
+                                    ).chain(CurveTween(curve: curve));
+
+                                    return FadeTransition(
+                                      opacity: animation,
+                                      child: SlideTransition(
+                                        position: animation.drive(tween),
+                                        child: child,
+                                      ),
+                                    );
+                                  },
                             ),
                           );
                         },
