@@ -1,6 +1,6 @@
 import 'dart:math';
-import 'package:mcq_app/core/utility/app_gradients.dart';
 import 'package:flutter/material.dart';
+import 'package:mcq_app/core/utility/app_gradients.dart';
 import 'package:mcq_app/services/auth_service.dart';
 import 'package:mcq_app/services/firestore_services.dart';
 
@@ -16,10 +16,15 @@ class _RegisterState extends State<RegisterScreen> {
   final passwordcontroller = TextEditingController();
   final namecontroller = TextEditingController();
 
-  String role = "student";
+  final subjectController = TextEditingController();
+  final orgController = TextEditingController();
+
+  bool teacherMode = false;
   bool isLoading = false;
 
-  String generateCode() => (1000000 + Random().nextInt(9000000)).toString();
+  String generateCode() {
+    return (1000000 + Random().nextInt(9000000)).toString();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,10 +39,7 @@ class _RegisterState extends State<RegisterScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 40),
-
                   const Icon(Icons.person_add, size: 80, color: Colors.white),
-
                   const SizedBox(height: 20),
 
                   const Text(
@@ -52,14 +54,14 @@ class _RegisterState extends State<RegisterScreen> {
 
                   const SizedBox(height: 40),
 
-                  // Name
+                  /// NAME
                   TextField(
                     controller: namecontroller,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
-                      prefixIcon: const Icon(Icons.person),
                       hintText: "Name",
+                      prefixIcon: const Icon(Icons.person),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(15),
                         borderSide: BorderSide.none,
@@ -69,14 +71,14 @@ class _RegisterState extends State<RegisterScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Email
+                  /// EMAIL
                   TextField(
                     controller: emailcontroller,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
-                      prefixIcon: const Icon(Icons.email),
                       hintText: "Email",
+                      prefixIcon: const Icon(Icons.email),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(15),
                         borderSide: BorderSide.none,
@@ -86,15 +88,15 @@ class _RegisterState extends State<RegisterScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Password
+                  /// PASSWORD
                   TextField(
                     controller: passwordcontroller,
                     obscureText: true,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
-                      prefixIcon: const Icon(Icons.lock),
                       hintText: "Password",
+                      prefixIcon: const Icon(Icons.lock),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(15),
                         borderSide: BorderSide.none,
@@ -104,107 +106,102 @@ class _RegisterState extends State<RegisterScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Role Dropdown
-                  DropdownButtonFormField<String>(
-                    value: role,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      prefixIcon: const Icon(Icons.badge),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide.none,
+                  /// BUTTON TO BECOME TEACHER
+                  if (!teacherMode)
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          teacherMode = true;
+                        });
+                      },
+                      icon: const Icon(Icons.school),
+                      label: const Text("Become Teacher (14-Day Trial)"),
+                    ),
+
+                  /// TEACHER FIELDS
+                  if (teacherMode) ...[
+                    const SizedBox(height: 20),
+
+                    TextField(
+                      controller: subjectController,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        hintText: "Subject",
+                        prefixIcon: const Icon(Icons.menu_book),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
                     ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: "student",
-                        child: Text("Student"),
+
+                    const SizedBox(height: 20),
+
+                    TextField(
+                      controller: orgController,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        hintText: "Organization / School",
+                        prefixIcon: const Icon(Icons.school),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
-                      DropdownMenuItem(
-                        value: "teacher",
-                        child: Text("Teacher"),
-                      ),
-                    ],
-                    onChanged: (val) {
-                      setState(() {
-                        role = val!;
-                      });
-                    },
-                  ),
+                    ),
+                  ],
 
                   const SizedBox(height: 30),
 
-                  // Register Button
-                  SizedBox(
-                    height: 55,
-                    child: ElevatedButton(
-                      onPressed: isLoading
-                          ? null
-                          : () async {
-                              setState(() => isLoading = true);
+                  /// REGISTER BUTTON
+                  ElevatedButton(
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            setState(() => isLoading = true);
 
-                              final auth = AuthService();
-                              final fs = FirestoreServices();
+                            final auth = AuthService();
+                            final fs = FirestoreServices();
 
-                              final user = await auth.register(
-                                emailcontroller.text.trim(),
-                                passwordcontroller.text.trim(),
+                            final user = await auth.register(
+                              emailcontroller.text.trim(),
+                              passwordcontroller.text.trim(),
+                            );
+
+                            if (user != null) {
+                              final now = DateTime.now();
+                              final trialEnd = now.add(
+                                const Duration(days: 14),
                               );
 
-                              if (user != null) {
-                                await fs.createuser(
-                                  uid: user.uid,
-                                  name: namecontroller.text.trim(),
-                                  email: emailcontroller.text.trim(),
-                                  role: role,
-                                  referralCode: role == "teacher"
-                                      ? generateCode()
-                                      : null,
-                                );
-                              }
+                              await fs.createuser(
+                                uid: user.uid,
+                                name: namecontroller.text.trim(),
+                                email: emailcontroller.text.trim(),
+                                role: teacherMode ? "teacher_trial" : "student",
+                                referralCode: teacherMode
+                                    ? generateCode()
+                                    : null,
+                                subject: teacherMode
+                                    ? subjectController.text.trim()
+                                    : null,
+                                organization: teacherMode
+                                    ? orgController.text.trim()
+                                    : null,
+                                trialStart: teacherMode ? now : null,
+                                trialEnd: teacherMode ? trialEnd : null,
+                              );
+                            }
 
-                              setState(() => isLoading = false);
-                              Navigator.pop(context);
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black87,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ),
-                      child: isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              "Register",
-                              style: TextStyle(fontSize: 18),
-                            ),
-                    ),
-                  ),
+                            setState(() => isLoading = false);
 
-                  const SizedBox(height: 20),
-
-                  // Back to Login
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        "Already have an account?",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        child: const Text(
-                          "Login",
-                          style: TextStyle(
-                            color: Colors.yellowAccent,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
+                            Navigator.pop(context);
+                          },
+                    child: isLoading
+                        ? const CircularProgressIndicator()
+                        : const Text("Register"),
                   ),
                 ],
               ),

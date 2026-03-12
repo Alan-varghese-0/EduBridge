@@ -44,7 +44,7 @@ class StudentDashboard extends StatelessWidget {
               );
             },
           ),
-          TextButton(
+          IconButton(
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
               Navigator.push(
@@ -52,7 +52,7 @@ class StudentDashboard extends StatelessWidget {
                 AppTransitions.fadeTransition(const LoginScreen()),
               );
             },
-            child: Text("sign out"),
+            icon: Icon(Icons.logout_outlined, color: Colors.white),
           ),
         ],
       ),

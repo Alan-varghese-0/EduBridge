@@ -27,7 +27,7 @@ class _CreateQiuzScreenState extends State<CreateQiuzScreen> {
                   titlecontroller.text.trim(),
                 );
 
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
                     builder: (_) => AddQuestionScreen(quizId: quizId),
