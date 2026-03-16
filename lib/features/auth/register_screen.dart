@@ -15,7 +15,6 @@ class _RegisterState extends State<RegisterScreen> {
   final emailcontroller = TextEditingController();
   final passwordcontroller = TextEditingController();
   final namecontroller = TextEditingController();
-
   final subjectController = TextEditingController();
   final orgController = TextEditingController();
 
@@ -24,6 +23,87 @@ class _RegisterState extends State<RegisterScreen> {
 
   String generateCode() {
     return (1000000 + Random().nextInt(9000000)).toString();
+  }
+
+  @override
+  void dispose() {
+    emailcontroller.dispose();
+    passwordcontroller.dispose();
+    namecontroller.dispose();
+    subjectController.dispose();
+    orgController.dispose();
+    super.dispose();
+  }
+
+  Future<void> registerUser() async {
+    if (namecontroller.text.isEmpty ||
+        emailcontroller.text.isEmpty ||
+        passwordcontroller.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill all required fields")),
+      );
+      return;
+    }
+
+    if (teacherMode &&
+        (subjectController.text.isEmpty || orgController.text.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please complete teacher details")),
+      );
+      return;
+    }
+
+    try {
+      setState(() => isLoading = true);
+
+      final auth = AuthService();
+      final fs = FirestoreServices();
+
+      final user = await auth.register(
+        emailcontroller.text.trim(),
+        passwordcontroller.text.trim(),
+      );
+
+      if (user == null) throw Exception("Registration failed");
+
+      final now = DateTime.now();
+      final trialEnd = now.add(const Duration(days: 14));
+
+      await fs.createuser(
+        uid: user.uid,
+        name: namecontroller.text.trim(),
+        email: emailcontroller.text.trim(),
+        role: teacherMode ? "teacher_trial" : "student",
+        referralCode: teacherMode ? generateCode() : null,
+        subject: teacherMode ? subjectController.text.trim() : null,
+        organization: teacherMode ? orgController.text.trim() : null,
+        trialStart: teacherMode ? now : null,
+        trialEnd: teacherMode ? trialEnd : null,
+      );
+
+      if (!mounted) return;
+
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  InputDecoration inputStyle(String hint, IconData icon) {
+    return InputDecoration(
+      filled: true,
+      fillColor: Colors.white,
+      hintText: hint,
+      prefixIcon: Icon(icon),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide.none,
+      ),
+    );
   }
 
   @override
@@ -40,6 +120,7 @@ class _RegisterState extends State<RegisterScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Icon(Icons.person_add, size: 80, color: Colors.white),
+
                   const SizedBox(height: 20),
 
                   const Text(
@@ -54,61 +135,33 @@ class _RegisterState extends State<RegisterScreen> {
 
                   const SizedBox(height: 40),
 
-                  /// NAME
                   TextField(
                     controller: namecontroller,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      hintText: "Name",
-                      prefixIcon: const Icon(Icons.person),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
+                    decoration: inputStyle("Name", Icons.person),
                   ),
 
                   const SizedBox(height: 20),
 
-                  /// EMAIL
                   TextField(
                     controller: emailcontroller,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      hintText: "Email",
-                      prefixIcon: const Icon(Icons.email),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
+                    decoration: inputStyle("Email", Icons.email),
                   ),
 
                   const SizedBox(height: 20),
 
-                  /// PASSWORD
                   TextField(
                     controller: passwordcontroller,
                     obscureText: true,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      hintText: "Password",
-                      prefixIcon: const Icon(Icons.lock),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
+                    decoration: inputStyle("Password", Icons.lock),
                   ),
 
                   const SizedBox(height: 20),
 
-                  /// BUTTON TO BECOME TEACHER
                   if (!teacherMode)
                     ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
                       onPressed: () {
                         setState(() {
                           teacherMode = true;
@@ -118,90 +171,45 @@ class _RegisterState extends State<RegisterScreen> {
                       label: const Text("Become Teacher (14-Day Trial)"),
                     ),
 
-                  /// TEACHER FIELDS
                   if (teacherMode) ...[
                     const SizedBox(height: 20),
 
                     TextField(
                       controller: subjectController,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white,
-                        hintText: "Subject",
-                        prefixIcon: const Icon(Icons.menu_book),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
+                      decoration: inputStyle("Subject", Icons.menu_book),
                     ),
 
                     const SizedBox(height: 20),
 
                     TextField(
                       controller: orgController,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white,
-                        hintText: "Organization / School",
-                        prefixIcon: const Icon(Icons.school),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: BorderSide.none,
-                        ),
+                      decoration: inputStyle(
+                        "Organization / School",
+                        Icons.school,
                       ),
                     ),
                   ],
 
                   const SizedBox(height: 30),
 
-                  /// REGISTER BUTTON
                   ElevatedButton(
-                    onPressed: isLoading
-                        ? null
-                        : () async {
-                            setState(() => isLoading = true);
-
-                            final auth = AuthService();
-                            final fs = FirestoreServices();
-
-                            final user = await auth.register(
-                              emailcontroller.text.trim(),
-                              passwordcontroller.text.trim(),
-                            );
-
-                            if (user != null) {
-                              final now = DateTime.now();
-                              final trialEnd = now.add(
-                                const Duration(days: 14),
-                              );
-
-                              await fs.createuser(
-                                uid: user.uid,
-                                name: namecontroller.text.trim(),
-                                email: emailcontroller.text.trim(),
-                                role: teacherMode ? "teacher_trial" : "student",
-                                referralCode: teacherMode
-                                    ? generateCode()
-                                    : null,
-                                subject: teacherMode
-                                    ? subjectController.text.trim()
-                                    : null,
-                                organization: teacherMode
-                                    ? orgController.text.trim()
-                                    : null,
-                                trialStart: teacherMode ? now : null,
-                                trialEnd: teacherMode ? trialEnd : null,
-                              );
-                            }
-
-                            setState(() => isLoading = false);
-
-                            Navigator.pop(context);
-                          },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: isLoading ? null : registerUser,
                     child: isLoading
-                        ? const CircularProgressIndicator()
-                        : const Text("Register"),
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            "Register",
+                            style: TextStyle(fontSize: 16),
+                          ),
                   ),
                 ],
               ),

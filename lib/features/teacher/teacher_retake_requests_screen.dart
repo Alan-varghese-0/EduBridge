@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 class TeacherRetakeRequestsScreen extends StatelessWidget {
   final String teacherId;
@@ -8,81 +8,163 @@ class TeacherRetakeRequestsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Retake Requests")),
-      body: StreamBuilder(
-        stream: FirebaseFirestore.instance
-            .collection('retakeRequests')
-            .where('teacherId', isEqualTo: teacherId)
-            .where('status', isEqualTo: 'pending')
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      appBar: AppBar(
+        title: const Text('Retake requests'),
+      ),
+      body: SafeArea(
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('retakeRequests')
+              .where('teacherId', isEqualTo: teacherId)
+              .where('status', isEqualTo: 'pending')
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final requests = snapshot.data!.docs;
+            if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  'Unable to load retake requests.\nPlease try again later.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              );
+            }
 
-          if (requests.isEmpty) {
-            return const Center(child: Text("No requests"));
-          }
+            final requests = snapshot.data?.docs ?? [];
 
-          return ListView.builder(
-            itemCount: requests.length,
-            itemBuilder: (context, index) {
-              final request = requests[index];
-
-              return FutureBuilder(
-                future: Future.wait([
-                  FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(request['studentId'])
-                      .get(),
-                  FirebaseFirestore.instance
-                      .collection('quizzes')
-                      .doc(request['quizId'])
-                      .get(),
-                ]),
-                builder: (context, AsyncSnapshot<List<DocumentSnapshot>> snap) {
-                  if (!snap.hasData) {
-                    return const ListTile(title: Text("Loading..."));
-                  }
-
-                  final studentDoc = snap.data![0];
-                  final quizDoc = snap.data![1];
-
-                  final studentName = studentDoc['name'];
-                  final quizTitle = quizDoc['title'];
-
-                  return Card(
-                    margin: const EdgeInsets.all(10),
-                    child: ListTile(
-                      title: Text("Quiz: $quizTitle"),
-                      subtitle: Text("Student: $studentName"),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.check, color: Colors.green),
-                            onPressed: () {
-                              approveRequest(request);
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close, color: Colors.red),
-                            onPressed: () {
-                              rejectRequest(request.id);
-                            },
-                          ),
-                        ],
+            if (requests.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.history_rounded,
+                      size: 40,
+                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No pending retake requests',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  );
-                },
+                    const SizedBox(height: 4),
+                    Text(
+                      'Students can request another attempt when time runs out.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               );
-            },
-          );
-        },
+            }
+
+            return ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: requests.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (context, index) {
+                final request = requests[index];
+
+                return FutureBuilder<List<DocumentSnapshot>>(
+                  future: Future.wait([
+                    FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(request['studentId'])
+                        .get(),
+                    FirebaseFirestore.instance
+                        .collection('quizzes')
+                        .doc(request['quizId'])
+                        .get(),
+                  ]),
+                  builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const ListTile(
+                          title: Text('Loading request...'),
+                        ),
+                      );
+                    }
+
+                    if (!snap.hasData || snap.data!.length < 2) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final studentDoc = snap.data![0];
+                    final quizDoc = snap.data![1];
+
+                    final studentName = studentDoc['name'] ?? 'Student';
+                    final quizTitle = quizDoc['title'] ?? 'Quiz';
+
+                    return Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor:
+                              theme.colorScheme.secondary.withOpacity(0.1),
+                          child: Icon(
+                            Icons.refresh_rounded,
+                            color: theme.colorScheme.secondary,
+                          ),
+                        ),
+                        title: Text(
+                          quizTitle,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        subtitle: Text(
+                          'Requested by $studentName',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color:
+                                theme.colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: 'Reject',
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: theme.colorScheme.error,
+                              ),
+                              onPressed: () {
+                                rejectRequest(request.id);
+                              },
+                            ),
+                            IconButton(
+                              tooltip: 'Approve retake',
+                              icon: Icon(
+                                Icons.check_rounded,
+                                color: theme.colorScheme.primary,
+                              ),
+                              onPressed: () {
+                                approveRequest(request);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

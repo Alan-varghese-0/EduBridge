@@ -35,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final role = userDoc['role'];
 
-      if (role == 'teacher') {
+      if (role == 'teacher' || role == 'teacher_trial') {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => TeacherDashboard()),

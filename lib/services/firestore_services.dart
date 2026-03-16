@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FirestoreServices {
-  final _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   Future<void> createuser({
     required String uid,
@@ -28,19 +28,16 @@ class FirestoreServices {
     });
   }
 
-  /// connect student to teacher
   Future<void> connectTeacher(String studentId, String teacherId) async {
     await _db.collection("users").doc(studentId).update({
       'connectedTeacherId': teacherId,
     });
   }
 
-  /// teacher creates quiz
   Future<String> createQuiz(String teacherId, String quizTitle) async {
     final doc = await _db.collection("quizzes").add({
       'teacherId': teacherId,
       'title': quizTitle,
-      'date': Timestamp.now(),
       'createdAt': Timestamp.now(),
     });
 

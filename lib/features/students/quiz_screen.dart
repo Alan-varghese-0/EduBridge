@@ -40,8 +40,18 @@ class _QuizScreenState extends State<QuizScreen> {
 
     final teacherId = studentDoc['connectedTeacherId'];
 
+    /// Get quiz title
+    final quizDoc = await FirebaseFirestore.instance
+        .collection('quizzes')
+        .doc(widget.quizId)
+        .get();
+
+    final quizTitle = quizDoc['title'];
+
+    /// Save submission
     await FirebaseFirestore.instance.collection('submissions').add({
       'quizId': widget.quizId,
+      'quizTitle': quizTitle,
       'studentId': studentId,
       'teacherId': teacherId,
       'score': score,
@@ -50,6 +60,7 @@ class _QuizScreenState extends State<QuizScreen> {
       'submittedAt': Timestamp.now(),
     });
 
+    /// Mark quiz taken
     await FirebaseFirestore.instance
         .collection("users")
         .doc(studentId)
@@ -57,7 +68,7 @@ class _QuizScreenState extends State<QuizScreen> {
         .doc(widget.quizId)
         .set({'taken': true, 'takenAt': Timestamp.now()});
 
-    // remove retake permission after retake
+    /// Remove retake permission
     await FirebaseFirestore.instance
         .collection("users")
         .doc(studentId)
@@ -75,8 +86,8 @@ class _QuizScreenState extends State<QuizScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // close dialog
-              Navigator.pop(context); // go back to quiz list
+              Navigator.pop(context);
+              Navigator.pop(context);
             },
             child: const Text("OK"),
           ),
@@ -89,12 +100,14 @@ class _QuizScreenState extends State<QuizScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Quiz")),
-      body: StreamBuilder(
+
+      body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('quizzes')
             .doc(widget.quizId)
             .collection('questions')
             .snapshots(),
+
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -114,6 +127,7 @@ class _QuizScreenState extends State<QuizScreen> {
                       margin: const EdgeInsets.all(10),
                       child: Padding(
                         padding: const EdgeInsets.all(10),
+
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -163,11 +177,13 @@ class _QuizScreenState extends State<QuizScreen> {
     return RadioListTile(
       value: optionKey,
       groupValue: selectedAnswers[questionId],
+
       onChanged: (value) {
         setState(() {
           selectedAnswers[questionId] = value!;
         });
       },
+
       title: Text("$optionKey. $optionText"),
     );
   }
